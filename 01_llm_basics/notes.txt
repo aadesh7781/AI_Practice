@@ -1,0 +1,339 @@
+PHASE 1 — LLM FUNDAMENTALS Interview Preparation Theory Notes
+
+Purpose These notes summarise the LLM fundamentals covered during
+Phase 1. They are designed for interview revision. They explain concepts
+and distinctions rather than serving as a complete implementation guide.
+
+1.  WHAT IS A LARGE LANGUAGE MODEL (LLM)? A Large Language Model is a
+    neural network trained on large amounts of text (and, for multimodal
+    models, other data) to learn patterns in language and generate
+    likely continuations or responses.
+
+-   It processes text as tokens rather than directly understanding words
+    as humans do.
+-   It learns statistical and semantic patterns from training data.
+-   At inference time, it generates output token by token, conditioned
+    on the input context.
+-   An LLM can perform tasks such as summarisation, question answering,
+    classification, extraction, coding and dialogue.
+
+Interview answer: “An LLM is a neural network trained on large datasets
+to predict and generate token sequences. It uses the context supplied to
+it to produce responses and can perform many language tasks through
+prompting or task-specific training.”
+
+2.  TOKENS AND TOKENIZATION A token is a unit of text used by a model. A
+    token may be a whole word, part of a word, punctuation mark or other
+    text unit. Tokenization converts input text into token IDs that the
+    model can process. Why tokens matter:
+
+-   Models have a maximum context window.
+-   Input and output usage is often measured in tokens.
+-   Token count affects latency and API cost.
+-   A word does not always equal one token; tokenization depends on the
+    tokenizer.
+
+3.  CONTEXT WINDOW The context window is the maximum amount of tokenized
+    information a model can consider in one request, including relevant
+    input messages and generated output, subject to the model/provider’s
+    rules. It may include:
+
+-   System instructions
+-   Developer instructions
+-   User messages
+-   Previous conversation messages
+-   Tool outputs or retrieved content
+-   The response being generated A larger context window does not
+    automatically mean better answers. Irrelevant, contradictory or
+    excessive context can reduce answer quality and increase
+    cost/latency.
+
+4.  CHAT MESSAGE STRUCTURE AND ROLES A chat request is commonly
+    represented as a sequence of messages. Each message has a role and
+    content. Common roles:
+
+-   System: high-level behavioural instructions or application policy.
+-   Human/User: the user’s request or information.
+-   AI/Assistant: the model’s response.
+-   Tool: output returned by an external tool, in systems that support
+    tool messages. The role tells the model where a message comes from
+    and helps establish the conversation structure.
+
+LangChain message classes covered: - SystemMessage - HumanMessage -
+AIMessage Messages can also be represented using tuple shorthand in
+prompt templates, for example (“system”, “…”) and (“human”, “…”).
+
+5.  PROMPT TEMPLATES A prompt template is a reusable structure with
+    variable placeholders. It avoids manually rebuilding prompts for
+    every request. Example concept: “Explain {topic} at a {level}
+    level.” The application supplies values for topic and level at
+    runtime. In LangChain:
+
+-   ChatPromptTemplate creates structured chat prompts.
+-   Variables are supplied when formatting or invoking the template.
+-   format_messages() creates the message list.
+-   invoke() runs the prompt runnable and returns the prompt value.
+    Prompt templates improve reuse, consistency and maintainability.
+    They do not by themselves make a prompt secure.
+
+6.  MESSAGES PLACEHOLDER MessagesPlaceholder allows a prompt template to
+    receive a dynamic list of previous messages. It is useful for
+    conversation history because the number and content of prior
+    messages can change between requests. The application must still
+    control which messages are included and how much history is
+    retained.
+
+7.  CONVERSATION HISTORY An LLM API call is generally stateless unless
+    the application sends prior conversation context again or uses a
+    provider-managed state feature. Conversation history is the message
+    sequence maintained by the application and supplied to the model on
+    later turns. A basic history may contain:
+
+-   Previous user messages
+-   Previous assistant responses The application should preserve role
+    order and avoid mixing different users’ histories.
+
+8.  MEMORY In an LLM application, memory is the mechanism used to retain
+    and retrieve information across turns or sessions. Memory is usually
+    application-managed. It may store:
+
+-   Recent messages
+-   A summary of older messages
+-   User-approved preferences or facts
+-   Other relevant state Memory is not the same as the model’s training
+    data. Persisted conversation memory is external application data
+    supplied as context at inference time.
+
+9.  MESSAGE-COUNT TRIMMING A simple way to control history size is to
+    retain only the most recent N messages. Advantages:
+
+-   Easy to implement.
+-   Predictable number of messages. Limitations:
+-   Messages have different lengths.
+-   A small number of long messages may still exceed the token budget.
+-   Important older information may be discarded. Message-count trimming
+    is a rough approach, not a precise token-budget strategy.
+
+10. TOKEN-AWARE TRIMMING Token-aware trimming estimates or counts tokens
+    and keeps messages within a configured budget. Why it is better:
+
+-   The model limit is based on tokens, not message count.
+-   It can account for variable message lengths. Important
+    considerations:
+-   Reserve space for the system prompt and expected model output.
+-   Preserve valid conversational structure where required.
+-   Token counting may be approximate if the exact model tokenizer is
+    unavailable. Trimming controls the context sent to the model; it
+    does not necessarily delete the original stored data.
+
+11. CONVERSATION SUMMARIZATION Summarization compresses older
+    conversation history into a shorter representation. A common
+    strategy:
+12. Keep recent messages verbatim.
+13. Summarize older messages when history grows beyond a threshold.
+14. Include the summary plus recent messages in the next prompt.
+    Benefits:
+
+-   Retains important context in fewer tokens.
+-   Helps conversations continue over longer periods. Risks:
+-   A summary can omit details or introduce inaccuracies.
+-   Summaries may preserve malicious instructions unless treated
+    carefully.
+-   Summarization is lossy; it is not a perfect transcript.
+
+12. PERSISTENCE: JSON AND SQLITE Persistence means storing data so it
+    remains available after the application process stops. JSON:
+
+-   Human-readable file format.
+-   Useful for simple prototypes and small data structures.
+-   Requires care with concurrent writes, file corruption and access
+    control. SQLite:
+-   Embedded relational database.
+-   Stores data in tables and supports SQL queries and transactions.
+-   Suitable for local applications and prototypes.
+-   A database file still needs appropriate filesystem permissions,
+    backups and protection.
+
+The learning chatbot used a conversations table and a messages table. A
+conversation record stored an identifier and summary. Message records
+stored a conversation ID, role and content. A foreign key can associate
+messages with conversations.
+
+Important limitation of the prototype: The save routine replaced the
+active message history after summarisation, so older turns were
+represented by the summary rather than retained as a full transcript.
+This is a prototype design choice, not a complete audit-history
+solution.
+
+13. LCEL — LANGCHAIN EXPRESSION LANGUAGE LCEL is LangChain’s
+    compositional approach for connecting runnable components into
+    pipelines. The pipe operator (|) connects one runnable’s output to
+    the next runnable’s input. Example concept: prompt | model This
+    means:
+14. Format the prompt.
+15. Pass the resulting prompt to the model. The resulting chain can be
+    invoked or streamed, depending on component support.
+
+Benefits: - Composable pipelines. - Reusable components. - Consistent
+runnable interface. - Supports synchronous/asynchronous execution and
+streaming where supported.
+
+14. IMPORTANT LCEL RUNNABLES RunnableSequence: Runs components
+    sequentially. The output of one component becomes the input to the
+    next.
+
+RunnableLambda: Wraps a Python function so it can be used as a runnable
+in a chain.
+
+RunnablePassthrough: Passes the input through unchanged. It can be
+useful when a pipeline needs to preserve original input alongside
+derived values.
+
+RunnableParallel: Runs multiple branches using the same input and
+returns their outputs together, typically as a mapping.
+
+RunnableBranch: Selects a branch based on conditions.
+
+RunnableAssign / assign(): Adds computed values to an input mapping
+while preserving existing keys.
+
+Interview distinction: Sequence is for step-by-step flow; Parallel is
+for independent branches; Branch is for conditional routing; Lambda
+adapts a Python function; Passthrough preserves input.
+
+15. STREAMING Streaming returns generated output incrementally rather
+    than waiting for the complete response. In LangChain, stream() can
+    be used on supported models or chains. Benefits:
+
+-   Better perceived responsiveness.
+-   The user can start reading before generation finishes.
+-   Useful for interactive applications. Important design point: If the
+    application needs to persist the complete assistant response, it
+    should collect the chunks and save the completed response after
+    generation. Saving each partial chunk as a separate assistant turn
+    can corrupt conversation history unless deliberately designed.
+
+Streaming support depends on the model, provider and chain components. A
+downstream component may prevent or change streaming behaviour.
+
+16. STRUCTURED OUTPUT Structured output asks the model to return data
+    matching a defined schema, often represented by a Pydantic model.
+    Example use cases:
+
+-   Extracting fields from text.
+-   Classification into categories.
+-   Returning an object with a fixed set of fields.
+-   Producing machine-readable results for backend logic.
+
+Pydantic provides: - Field definitions and types. - Required and
+optional fields. - Enums for constrained choices. - Field constraints,
+such as numeric ranges. - Validators for custom validation.
+
+Why it matters: A schema makes model output easier to validate and
+consume programmatically than free-form prose. Important limitation:
+Schema validation checks the shape and constraints of the returned data.
+It does not prove that the content is factually correct, safe or
+authorized.
+
+17. PYDANTIC VALIDATION Type validation checks whether values match
+    expected types. Field constraints restrict acceptable values, for
+    example confidence between 0 and 1. Enums restrict a field to a
+    known set of choices. Optional fields may be absent or null
+    depending on the schema. Custom validators enforce
+    application-specific rules. The application should still handle
+    validation errors and unexpected model output.
+
+18. RETRIES AND FALLBACKS Retry: Repeats an operation after a retryable
+    failure. Useful for transient network errors, rate limits or
+    temporary provider problems, depending on retry policy. A retry
+    policy should use bounded attempts and appropriate backoff. Retrying
+    every error can waste time and money.
+
+Fallback: Uses an alternative runnable or provider when the primary
+operation fails. A fallback is not the same as a retry: - Retry attempts
+the same operation again. - Fallback switches to an alternative. A
+fallback model may have different capabilities, context limits, latency
+or output behaviour. Validate its output using the same application
+rules.
+
+19. STRUCTURED OUTPUT AND STREAMING LIMITATIONS Provider support varies.
+    In the learning setup, the Groq structured-output feature being used
+    did not support streaming at that time. A client-side setting cannot
+    force a provider to emit incremental structured-output chunks if the
+    provider endpoint does not support it. Practical design:
+
+-   Use ordinary streaming for conversational text when supported.
+-   Use non-streaming structured output when the provider requires it.
+-   Check current provider documentation before relying on a capability.
+
+20. LLM APPLICATION ARCHITECTURE — LEARNING CHATBOT The learning chatbot
+    combined:
+
+-   Groq-hosted chat model
+-   Prompt template and LCEL chain
+-   Conversation history
+-   Token-aware trimming
+-   Rolling summarisation
+-   Streaming responses
+-   SQLite persistence
+-   Conversation identifiers This was a learning prototype, not a
+    production-ready service.
+
+21. COMMON INTERVIEW QUESTIONS AND SHORT ANSWERS
+
+Q: Is an LLM API automatically stateful? A: No. A typical request is
+independent. The application must send conversation history or use an
+explicit provider-managed state mechanism.
+
+Q: What is the difference between a token and a word? A: A token is the
+model’s text-processing unit. It may be a word, part of a word or
+punctuation; one word is not necessarily one token.
+
+Q: Why is token-aware trimming better than keeping the last five
+messages? A: Because context limits are measured in tokens and messages
+vary in length.
+
+Q: What is the difference between trimming and summarization? A:
+Trimming removes messages from the prompt context. Summarization
+compresses older information into a shorter representation.
+
+Q: Is a summary lossless? A: No. Summarization is lossy and may omit or
+distort details.
+
+Q: What is LCEL? A: LangChain Expression Language is a compositional way
+to connect runnables into pipelines, commonly using the pipe operator.
+
+Q: What is the difference between RunnableSequence and RunnableParallel?
+A: Sequence runs components one after another; Parallel executes
+independent branches against the same input and combines their outputs.
+
+Q: Why use structured output? A: It constrains the response to a schema
+that application code can validate and consume.
+
+Q: Does Pydantic guarantee the model’s answer is correct? A: No. It
+validates structure and defined constraints, not factual truth.
+
+Q: What is the difference between retry and fallback? A: Retry repeats
+the same operation; fallback switches to an alternative operation or
+model.
+
+Q: Why stream an LLM response? A: To deliver partial output as it is
+generated and improve perceived responsiveness.
+
+Q: Why should the complete response be saved after streaming? A: To
+preserve a coherent assistant turn rather than accidentally storing each
+chunk as a separate message.
+
+22. KEY TAKEAWAYS
+
+-   The application is responsible for managing context and memory.
+-   Token budgets matter more than raw message counts.
+-   Summaries reduce context size but lose information.
+-   LCEL makes model workflows composable.
+-   Streaming is a delivery pattern; persistence still needs deliberate
+    handling.
+-   Structured output improves machine-readability, not truth or
+    security.
+-   Retries and fallbacks improve resilience only when designed with
+    limits and validation.
+-   A prototype chatbot is not automatically production-ready.
