@@ -1,122 +1,128 @@
 
-# Context management controls what information an LLM
-# receives over time.
-#
-# Techniques covered:
-# 1. Context Trimming
-# 2. Context Summarisation
-# 3. Context Prioritisation
-# 4. Context Updating
+
+import os
+from dotenv import load_dotenv
+
+from langchain_groq import ChatGroq
+from langchain_core.messages import (
+    SystemMessage,
+    HumanMessage,
+    AIMessage
+)
+from langchain_core.messages import trim_messages
+from langchain_core.messages.utils import count_tokens_approximately
+
+load_dotenv()
+
+# Initialize LLM
+llm = ChatGroq(
+    model="openai/gpt-oss-20b",
+    temperature=0
+)
 
 
 # ------------------------------------------------------------
 # 1. CONTEXT TRIMMING
 # ------------------------------------------------------------
 
-# Remove older messages and retain only recent messages.
-# This example keeps the latest 3 messages.
+# LangChain removes older messages to fit the token budget.
+# The latest messages are retained.
 
-conversation_history = [
-    "Hello",
-    "What is Python?",
-    "Explain variables",
-    "Explain loops",
-    "Explain functions",
-    "Explain classes"
+messages = [
+    SystemMessage(content="You are a Python tutor."),
+    HumanMessage(content="What is Python?"),
+    AIMessage(content="Python is a programming language."),
+    HumanMessage(content="Explain variables."),
+    AIMessage(content="Variables store data."),
+    HumanMessage(content="Explain functions.")
 ]
 
-def trim_context(history, max_messages):
-    return history[-max_messages:]
+trimmed_messages = trim_messages(
+    messages,
+    max_tokens=100,
+    token_counter=count_tokens_approximately,
+    strategy="last",
+    include_system=True,
+    start_on="human"
+)
 
+print("\n1. TRIMMED CONTEXT")
 
-trimmed_history = trim_context(conversation_history, 3)
-
-print("\n1. CONTEXT TRIMMING")
-print(trimmed_history)
+for message in trimmed_messages:
+    print(message.type, ":", message.content)
 
 
 # ------------------------------------------------------------
 # 2. CONTEXT SUMMARISATION
 # ------------------------------------------------------------
 
-# Summarisation compresses older conversation into
-# a shorter representation.
-#
-# This is a MOCK summary for learning purposes.
-# Real LLM summarisation would require calling an LLM.
+# Use the LLM to summarise older conversation history.
+# Unlike a manually written summary, this calls the model.
 
-old_conversation = [
-    "I am learning Python.",
-    "I understand variables.",
-    "I understand loops.",
-    "I want to learn OOP next."
-]
+old_conversation = """
+User is learning Python.
+User understands variables and loops.
+User has started learning functions.
+User wants to learn object-oriented programming next.
+"""
 
-# Example of a manually prepared summary.
-conversation_summary = (
-    "User is learning Python, understands variables "
-    "and loops, and wants to learn OOP next."
-)
+summary = llm.invoke([
+    SystemMessage(
+        content="Summarise conversations into concise, useful facts. Do not invent information."
+    ),
+    HumanMessage(content=old_conversation)
+])
 
-print("\n2. CONTEXT SUMMARISATION")
-print("Original messages:", len(old_conversation))
-print("Summary:", conversation_summary)
+print("\n2. CONVERSATION SUMMARY")
+print(summary.content)
 
 
 # ------------------------------------------------------------
 # 3. CONTEXT PRIORITISATION
 # ------------------------------------------------------------
 
-# When context capacity is limited, important information
-# should receive priority over less relevant information.
-#
-# We assign a priority score to each piece of information.
-# Higher score = higher priority.
+# Prioritisation depends on application requirements.
+# We assign relevance scores and sort the information.
 
 context_items = [
-    {"content": "Current question", "priority": 10},
-    {"content": "Relevant project details", "priority": 9},
+    {"content": "Current user question", "priority": 10},
+    {"content": "Relevant project information", "priority": 9},
     {"content": "Recent conversation", "priority": 7},
     {"content": "Unrelated old conversation", "priority": 2}
 ]
 
-def prioritise_context(items):
-    return sorted(
-        items,
-        key=lambda item: item["priority"],
-        reverse=True
-    )
+prioritised_context = sorted(
+    context_items,
+    key=lambda item: item["priority"],
+    reverse=True
+)
 
-
-prioritised_context = prioritise_context(context_items)
-
-print("\n3. CONTEXT PRIORITISATION")
+print("\n3. PRIORITISED CONTEXT")
 
 for item in prioritised_context:
-    print(item["priority"], "-", item["content"])
+    print(item["content"], "-", item["priority"])
 
 
 # ------------------------------------------------------------
 # 4. CONTEXT UPDATING
 # ------------------------------------------------------------
 
-# Context can become outdated.
-# When new information arrives, we may need to update
-# the existing information.
-#
-# Example: A user changes their preferred programming
-# language for a particular project.
+# Update existing application context when new information
+# is received. In a real application, persist this in a
+# database with appropriate user ownership and validation.
 
 user_context = {
     "preferred_language": "Python",
     "learning_level": "Beginner"
 }
 
-print("\n4. CONTEXT UPDATING")
-print("Before update:", user_context)
+print("\n4. CONTEXT BEFORE UPDATE")
+print(user_context)
 
-# Update the programming language.
-user_context["preferred_language"] = "Java"
+# Update the existing information.
+user_context.update({
+    "preferred_language": "Java"
+})
 
-print("After update:", user_context)
-
+print("\n4. CONTEXT AFTER UPDATE")
+print(user_context)
