@@ -1,0 +1,291 @@
+================================================
+ CONTEXT ENGINEERING – BRIEF NOTES
+================================================
+
+1. CONTEXT ENGINEERING
+----------------------
+Definition:
+Designing and managing all information provided to an LLM
+to generate accurate and relevant responses.
+
+Includes:
+- System instructions
+- User queries
+- Conversation history
+- Retrieved documents
+- Tool outputs
+- Memory
+
+Prompt Engineering = Designing instructions.
+Context Engineering = Managing the complete information.
+
+
+2. CONTEXT WINDOWS & TOKEN BUDGETS
+---------------------------------
+Context Window:
+Maximum tokens a model can process in an interaction.
+
+Token Budgeting:
+Allocating available tokens among instructions, history,
+retrieved documents, user query and output.
+
+Why?
+- Prevent context overflow.
+- Reduce unnecessary costs.
+- Improve relevance.
+
+3. CONTEXT ASSEMBLY
+-------------------
+Definition:
+Combining relevant information from multiple sources
+into one structured context before LLM generation.
+
+Sources:
+- User query
+- System prompt
+- Conversation history
+- Retrieved documents
+- Tool outputs
+
+
+4. CONTEXT MANAGEMENT
+---------------------
+Definition:
+Maintaining and controlling context across conversations.
+
+Techniques:
+- Message trimming: Remove older messages.
+- Token-aware trimming: Remove messages based on token limits.
+- Summarization: Compress older conversations.
+- Rolling summary: Update summaries over time.
+
+LangChain:
+trim_messages()
+
+
+5. CHUNKING STRATEGIES
+----------------------
+Definition:
+Splitting large documents into smaller pieces called chunks.
+
+Types:
+- Character-based: Fixed character length.
+- Recursive: Splits using paragraph, line and word separators.
+- Sentence-based: Splits at sentence boundaries.
+- Markdown: Splits using headings.
+- Semantic: Groups text based on meaning.
+
+Chunk Overlap:
+Repeats some text between adjacent chunks to preserve context.
+
+Trade-off:
+Small chunks = precise retrieval but less context.
+Large chunks = more context but potentially more noise.
+
+
+6. EMBEDDINGS
+-------------
+Definition:
+Numerical vector representations of text.
+
+Purpose:
+Capture semantic meaning for similarity search.
+
+Similarity methods:
+- Cosine Similarity
+- Euclidean Distance
+- Dot Product
+
+Model used:
+sentence-transformers/all-MiniLM-L6-v2
+
+Output:
+384-dimensional vectors.
+
+
+7. VECTOR DATABASES
+-------------------
+Definition:
+Stores embeddings and supports similarity-based retrieval.
+
+Used:
+ChromaDB
+
+Operations:
+- Insert
+- Search
+- Update
+- Delete
+- Metadata filtering
+
+Important:
+Lower distance can mean greater similarity, depending on
+the distance metric. Scores are not automatically probabilities.
+
+
+8. RAG FUNDAMENTALS
+-------------------
+RAG = Retrieval-Augmented Generation.
+
+Definition:
+Retrieves external information and provides it to an LLM
+before generating an answer.
+
+Workflow:
+Documents -> Chunking -> Embeddings -> Vector DB
+User Query -> Retrieval -> Context -> LLM -> Answer
+
+Benefits:
+- Access to private knowledge.
+- Updated information.
+- Evidence-based answers.
+
+Limitation:
+RAG reduces hallucination risk but does not eliminate it.
+
+
+9. RETRIEVAL STRATEGIES
+-----------------------
+Similarity Search:
+Finds semantically similar documents.
+
+BM25:
+Keyword-based document ranking.
+
+Hybrid Search:
+Combines semantic search and keyword search.
+
+RRF:
+Reciprocal Rank Fusion combines multiple ranked result lists.
+
+MMR:
+Maximum Marginal Relevance balances relevance and diversity.
+
+Metadata Filtering:
+Restricts retrieval using attributes like department or date.
+
+Query Transformation:
+Rewrites or expands queries to improve retrieval.
+
+
+10. RERANKING
+-------------
+Definition:
+Reorders retrieved documents based on query relevance.
+
+Bi-Encoder:
+Encodes query and document separately.
+Efficient for initial retrieval.
+
+Cross-Encoder:
+Evaluates query and document together.
+Useful for reranking.
+
+Model used:
+cross-encoder/ms-marco-MiniLM-L-6-v2
+
+Trade-off:
+Better relevance assessment, but additional latency.
+
+
+11. RAG EVALUATION
+------------------
+Precision:
+Relevant retrieved / Total retrieved
+
+Recall:
+Relevant retrieved / Total relevant
+
+F1:
+Harmonic mean of precision and recall.
+
+Faithfulness:
+Is the answer supported by retrieved context?
+
+Answer Relevancy:
+Does the answer address the question?
+
+Context Recall:
+Does retrieved context contain the required information?
+
+Framework:
+RAGAS
+
+Important:
+Evaluate retrieval and generation separately.
+
+
+12. CONTEXT & RAG SECURITY
+--------------------------
+Authentication:
+Verifies user identity.
+
+Authorization:
+Determines what the user can access.
+
+Prompt Injection:
+Malicious instructions attempting to manipulate the LLM.
+
+Indirect Prompt Injection:
+Malicious instructions inside external documents.
+
+Data Poisoning:
+Introducing malicious or misleading information into
+the knowledge base.
+
+PII:
+Personally Identifiable Information.
+
+Important Security Controls:
+- Document-level authorization.
+- Tenant isolation.
+- Secure document ingestion.
+- Prompt injection detection.
+- PII protection.
+- Output validation.
+- Secure conversation memory.
+
+IMPORTANT:
+Metadata filtering alone is NOT authorization.
+Backend access control must enforce permissions.
+
+
+================================================
+IMPORTANT LIBRARIES
+================================================
+
+LangChain              - LLM orchestration and RAG
+Sentence Transformers  - Embeddings and reranking
+ChromaDB               - Vector storage and retrieval
+BM25                   - Keyword retrieval
+Scikit-learn           - Evaluation and numerical operations
+RAGAS                  - RAG evaluation
+Presidio               - PII detection and anonymization
+FastAPI                - Backend APIs
+
+
+================================================
+INTERVIEW FRAMEWORK
+================================================
+
+For every technique, answer:
+
+1. WHY did we use it?
+2. WHAT does it do?
+3. WHAT RESULT does it produce?
+
+Example: Hybrid Search
+
+WHY:
+Semantic search may miss exact keywords.
+
+WHAT:
+Combines semantic retrieval and BM25.
+
+RESULT:
+Can improve retrieval coverage; measure using evaluation data.
+
+
+================================================
+END OF PHASE 2
+================================================
