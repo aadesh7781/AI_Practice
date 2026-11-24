@@ -4,3 +4,6 @@ __pycache__/
 .env
 .env
 **/conversation_memory.db
+.env
+.env.*
+!.env.example
