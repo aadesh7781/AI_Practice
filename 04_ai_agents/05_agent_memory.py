@@ -2,10 +2,6 @@
 import sqlite3
 
 
-# ==========================================
-# 1. DATABASE INITIALIZATION
-# ==========================================
-
 def initialize_database():
 
     connection = sqlite3.connect("agent_memory.db")
@@ -27,9 +23,7 @@ def initialize_database():
     connection.close()
 
 
-# ==========================================
-# 2. SAVE / UPDATE MEMORY
-# ==========================================
+
 
 def save_memory(user_id, key, value):
 
@@ -46,9 +40,7 @@ def save_memory(user_id, key, value):
     connection.close()
 
 
-# ==========================================
-# 3. RETRIEVE MEMORIES
-# ==========================================
+
 
 def get_memories(user_id):
 
@@ -68,26 +60,30 @@ def get_memories(user_id):
 
     return memories
 
+def delete_memory(user_id, key):
 
-# ==========================================
-# 4. TESTING
-# ==========================================
+    connection = sqlite3.connect("agent_memory.db")
+
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        DELETE FROM agent_memories
+        WHERE user_id = ? AND key = ?
+    """, (user_id, key))
+
+    deleted_count = cursor.rowcount
+
+    connection.commit()
+    connection.close()
+
+    return deleted_count
+
+
+
 
 if __name__ == "__main__":
 
     initialize_database()
-
-    save_memory(
-        "user_101",
-        "preferred_language",
-        "Python"
-    )
-
-    save_memory(
-        "user_101",
-        "current_learning",
-        "LangChain"
-    )
 
     print("\nUser 101 Memories:")
 
