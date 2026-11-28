@@ -22,4 +22,5 @@ Rather than focusing only on theoretical concepts or framework syntax, my approa
 
 Each topic is implemented through practical Python code, with an emphasis on understanding architectural decisions and reusing previously learned concepts.
 
-This repository will continuously evolve as I develop the skills required to design, build, and deploy real-world AI solutions.
+This repository will continuously evolve as I develop the skills required to design, build, and deploy real-world AI solutions
+
